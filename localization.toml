@@ -1,0 +1,71 @@
+[options.vibrate_mode]
+title.en = "Vibration Mode"
+
+[options.vibrate_mode.values]
+disabled.en = "Disabled"
+miss.en = "On Miss"
+miss_and_good.en = "On Miss and Good"
+
+[options.slide_alpha]
+title.en = "Slide Alpha"
+
+[options.guide_alpha]
+title.en = "Guide Alpha"
+
+[options.stage_cover_mode]
+title.en = "Stage Cover Mode"
+
+[options.stage_cover_mode.values]
+stage.en = "Stage"
+stage_and_line.en = "Stage and Line"
+full_width.en = "Full Width"
+
+[options.stage_cover_scroll_speed_compensation]
+title.en = "Stage Cover Note Speed Compensation"
+description.en = "Reduces note speed to compensate for the reduced visible area from stage cover."
+
+[options.stage_cover_scroll_speed_compensation.values]
+off.en = "Off"
+fixed_only.en = "Fixed Only"
+full.en = "Full"
+
+[options.hide_ui]
+title.en = "Hide UI"
+
+[options.slide_quality]
+title.en = "Slide Quality"
+
+[options.guide_quality]
+title.en = "Guide Quality"
+
+[options.note_margin]
+title.en = "Note Margin"
+description.en = "Shrinks the drawn width of notes to make adjacent notes easier to read."
+
+[options.effect_animation_speed]
+title.en = "Effect Animation Speed"
+
+[options.alternative_approach_curve]
+title.en = "Alternative Approach Curve"
+
+[options.disable_timescale]
+title.en = "Disable Timescale"
+
+[options.disable_fake_notes]
+title.en = "Disable Fake Notes"
+
+[options.score_mode]
+title.en = "Score Mode"
+
+[options.score_mode.values]
+weighted_flat.en = "Weighted Flat"
+weighted_combo.en = "Weighted Combo (Sekai Standard)"
+unweighted_flat.en = "Unweighted Flat (Sekai Ranked Match)"
+unweighted_combo.en = "Unweighted Combo"
+
+[options.show_hitboxes]
+title.en = "Show Hitboxes"
+
+[options.test_aspect_ratio]
+title.en = "Test Aspect Ratio"
+description.en = "Draws reference boxes for 21:9, 16:9, and 4:3 screens."

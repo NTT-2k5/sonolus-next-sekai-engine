@@ -780,7 +780,9 @@ def draw_dynamic_stage(
                 tilt_widened_edge(pos - 0.0125, pos - 0.1), tilt_widened_edge(pos + 0.0125, pos + 0.1)
             )
             ActiveSkin.lane_divider.draw(
-                place(Quad(bl=div_layout_b.bl, tl=div_layout_t.tl, tr=div_layout_t.tr, br=div_layout_b.br)), z=z.tuple, a=a
+                place(Quad(bl=div_layout_b.bl, tl=div_layout_t.tl, tr=div_layout_t.tr, br=div_layout_b.br)),
+                z=z.tuple,
+                a=a,
             )
 
     thickness_scale = lerp(1.0, clamp(1 / travel, 1, 4) if travel > 0 else 4, current_stage_tilt())

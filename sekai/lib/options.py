@@ -1,7 +1,9 @@
 from enum import IntEnum
 
-from sonolus.script.options import options, select_option, slider_option, toggle_option
+from sonolus.script.options import select_option, slider_option, toggle_option
 from sonolus.script.text import StandardText
+
+from sekai.lib.localization import localized_options
 
 
 class ScoreMode(IntEnum):
@@ -29,7 +31,7 @@ class VibrateMode(IntEnum):
     MISS_AND_GOOD = 2
 
 
-@options
+@localized_options
 class Options:
     speed: float = slider_option(
         name=StandardText.SPEED,
@@ -72,9 +74,9 @@ class Options:
         name="Vibration Mode",
         scope="Sekai",
         values=[
-            "Disabled",
-            "On Miss",
-            "On Miss and Good",
+            "disabled",
+            "miss",
+            "miss_and_good",
         ],
         default=0,
     )
@@ -159,9 +161,9 @@ class Options:
         advanced=True,
         scope="Sekai",
         values=[
-            "Stage",
-            "Stage and Line",
-            "Full Width",
+            "stage",
+            "stage_and_line",
+            "full_width",
         ],
         default=0,
     )
@@ -180,9 +182,9 @@ class Options:
         advanced=True,
         scope="Sekai",
         values=[
-            "Off",
-            "Fixed Only",
-            "Full",
+            "off",
+            "fixed_only",
+            "full",
         ],
         default=1,
     )
@@ -268,10 +270,10 @@ class Options:
         name="Score Mode",
         scope="Sekai",
         values=[
-            "Weighted Flat",
-            "Weighted Combo (Sekai Standard)",
-            "Unweighted Flat (Sekai Ranked Match)",
-            "Unweighted Combo",
+            "weighted_flat",
+            "weighted_combo",
+            "unweighted_flat",
+            "unweighted_combo",
         ],
         standard=True,
         advanced=True,
