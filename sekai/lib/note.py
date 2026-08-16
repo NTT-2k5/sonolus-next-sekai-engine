@@ -56,6 +56,7 @@ from sekai.lib.layout import (
     Hitbox,
     approach,
     get_alpha,
+    hidden_amount,
     iter_slot_lanes,
     layout_circular_effect,
     layout_flick_arrow,
@@ -360,7 +361,7 @@ def draw_slide_note_head(
     transform: AffineTransform2d,
     note_alpha: float,
 ):
-    if Options.hidden > 0:
+    if hidden_amount() > 0:
         return
     if note_alpha <= 0:
         return
