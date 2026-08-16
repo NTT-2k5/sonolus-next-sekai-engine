@@ -886,7 +886,7 @@ def draw_dynamic_stage(
     def draw_single_line(sprites: JudgmentSpriteSet, z: ZIndexes, a: float):
         half_thick = nh / f / 2
         layout = place(perspective_rect(l_jl, r_jl, 1 - half_thick, 1 + half_thick, travel))
-        sprites.judgment_edge.draw(layout, z=z.tuple, a=a)
+        sprites.judgment_single_line.draw(layout, z=z.tuple, a=a)
 
     la = lane_alpha * (1 - fw)
     if la > 0:
