@@ -540,9 +540,14 @@ def _mask_lab_stage(lane: float, mask_notes: bool) -> LevelStage:
     )
 
 
-# Mask lab: the left stage masks relative lanes [-2, 2]; the right is an unmasked control.
+# Mask lab: the left stage masks relative lanes [-2, 2]; the right is an unmasked control until the final connector.
 mask_lab_stage = _mask_lab_stage(-3.0, mask_notes=True)
 mask_lab_control_stage = _mask_lab_stage(3.0, mask_notes=False)
+mask_lab_control_stage.style_changes = [
+    _mask_lab_style(False, beat=0.0),
+    _mask_lab_style(False, beat=54.0),
+    _mask_lab_style(True, beat=54.5),
+]
 mask_lab_stage.style_changes = [
     _mask_lab_style(True, beat=0.0),
     _mask_lab_style(False, beat=36.0),
@@ -756,6 +761,63 @@ mask_lab_sim_notes = [
     LevelNote(beat=53.0, lane=0.5, size=0.5, kind=NoteKind.NORM_TAP, stage=mask_lab_stage),
 ]
 
+
+# The right stage also enables note masking for this section. Purple interpolates the two stage masks;
+# yellow shows the same lane 0 geometry with an unmasked tail. Purple matches yellow's full width in the middle.
+mask_lab_different_stage_connector = LevelSlide(
+    notes=[
+        LevelNote(
+            beat=56.0,
+            lane=3.0,
+            size=1.0,
+            kind=NoteKind.ANCHOR,
+            stage=mask_lab_stage,
+            is_separator=True,
+            segment_kind=ConnectorKind.GUIDE_PURPLE,
+            connector_ease=EaseType.LINEAR,
+            segment_layer=ConnectorLayer.OVER,
+        ),
+        LevelNote(
+            beat=59.0,
+            lane=-3.0,
+            size=1.0,
+            kind=NoteKind.ANCHOR,
+            stage=mask_lab_control_stage,
+            is_separator=True,
+            segment_kind=ConnectorKind.NONE,
+            connector_ease=EaseType.LINEAR,
+        ),
+    ]
+)
+
+
+mask_lab_different_stage_control_connector = LevelSlide(
+    notes=[
+        LevelNote(
+            beat=56.0,
+            lane=3.0,
+            size=1.0,
+            kind=NoteKind.ANCHOR,
+            stage=mask_lab_stage,
+            is_separator=True,
+            segment_kind=ConnectorKind.GUIDE_YELLOW,
+            connector_ease=EaseType.LINEAR,
+            segment_layer=ConnectorLayer.UNDER,
+        ),
+        LevelNote(
+            beat=59.0,
+            lane=0.0,
+            size=1.0,
+            kind=NoteKind.ANCHOR,
+            stage=None,
+            is_separator=True,
+            segment_kind=ConnectorKind.NONE,
+            connector_ease=EaseType.LINEAR,
+        ),
+    ]
+)
+
+
 mask_lab_level = build_level(
     name="mask-notes-test",
     title="Mask Notes Test",
@@ -768,6 +830,8 @@ mask_lab_level = build_level(
         mask_lab_control_slide,
         mask_lab_same_side_connector,
         mask_lab_opposite_connector,
+        mask_lab_different_stage_control_connector,
+        mask_lab_different_stage_connector,
         mask_lab_transition_slide,
         mask_lab_transition_control_slide,
         *mask_lab_notes,
