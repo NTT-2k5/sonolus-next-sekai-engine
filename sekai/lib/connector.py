@@ -580,6 +580,8 @@ def draw_connector_default(
     end_lane = lerp(head_lane, tail_lane, end_interp_frac)
     start_size = max(1e-3, lerp(head_size, tail_size, start_interp_frac))  # Lightweight rendering needs >0 size.
     end_size = max(1e-3, lerp(head_size, tail_size, end_interp_frac))  # Lightweight rendering needs >0 size.
+    if head_size <= 0 and tail_size <= 0:
+        return
     start_alpha = lerp(head_alpha, tail_alpha, start_frac)
     end_alpha = lerp(head_alpha, tail_alpha, end_frac)
     start_pos_y = pre_rotation_vec_at(start_lane, start_travel).y
