@@ -187,10 +187,24 @@ class VisualMask(Record):
     stage_index: int
 
 
+def interpolate_visual_masks(head: VisualMask, tail: VisualMask, frac: float) -> VisualMask:
+    """Return the connector mask at an interpolated point between two notes."""
+    result = +VisualMask
+    if not head.enabled or not tail.enabled:
+        return result
+    result.left = lerp(head.left, tail.left, frac)
+    result.right = lerp(head.right, tail.right, frac)
+    result.enabled = True
+    if head.stage_index > 0 and head.stage_index == tail.stage_index:
+        result.stage_index = head.stage_index
+    return result
+
+
 class StageMaskChangeLike(Protocol):
     time: float
     lane: float
     size: float
+    mask_notes: bool
     ease: EaseType
     next_ref: EntityRef
     prev_ref: EntityRef
@@ -230,7 +244,6 @@ class StageStyleChangeLike(Protocol):
     judge_line_alpha: float
     division_line_alpha: float
     note_alpha: float
-    mask_notes: bool
     ease: EaseType
     next_ref: EntityRef
     prev_ref: EntityRef
@@ -393,6 +406,7 @@ def get_stage_props(stage: DynamicStageLike, target_time: float | None = None, l
         mask_a = get_event_as(mask_a_ref, _stage_mask_change_archetype())
         result.lane = mask_a.lane
         result.width = mask_a.size
+        result.mask_notes = mask_a.mask_notes
         if mask_b_ref.index > 0:
             mask_b = get_event_as(mask_b_ref, _stage_mask_change_archetype())
             t_a = mask_a.time
@@ -405,6 +419,7 @@ def get_stage_props(stage: DynamicStageLike, target_time: float | None = None, l
         mask_b = get_event_as(mask_b_ref, _stage_mask_change_archetype())
         result.lane = mask_b.lane
         result.width = mask_b.size
+        result.mask_notes = mask_b.mask_notes
 
     # Query pivot changes
     pivot_a_ref, pivot_b_ref = query_event_list(first_pivot_change_ref, t, lambda e: e.time)
@@ -473,7 +488,6 @@ def get_stage_props(stage: DynamicStageLike, target_time: float | None = None, l
         result.full_width = full_width_factor(style_a.full_width)
         result.division_line_alpha = style_a.division_line_alpha
         result.note_alpha = style_a.note_alpha
-        result.mask_notes = style_a.mask_notes
         if style_b_ref.index > 0:
             style_b = get_event_as(style_b_ref, _stage_style_change_archetype())
             t_a = style_a.time
@@ -510,7 +524,6 @@ def get_stage_props(stage: DynamicStageLike, target_time: float | None = None, l
         result.full_width = full_width_factor(style_b.full_width)
         result.division_line_alpha = style_b.division_line_alpha
         result.note_alpha = style_b.note_alpha
-        result.mask_notes = style_b.mask_notes
 
     # Query transform changes
     transform_a_ref, transform_b_ref = query_event_list(first_transform_change_ref, t, lambda e: e.time)

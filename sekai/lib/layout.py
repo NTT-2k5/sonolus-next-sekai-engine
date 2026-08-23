@@ -1342,7 +1342,10 @@ def compute_hitbox_at_time(
 
 def segment_closeness_score(p: Vec2, seg: HitboxTarget) -> float:
     d = seg.r - seg.l
-    t = clamp((p - seg.l).dot(d) / d.dot(d), 0.0, 1.0)
+    length_squared = d.dot(d)
+    if length_squared == 0:
+        return -(p - seg.l).magnitude
+    t = clamp((p - seg.l).dot(d) / length_squared, 0.0, 1.0)
     return -(p - (seg.l + d * t)).magnitude
 
 

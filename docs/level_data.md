@@ -55,6 +55,7 @@ An event that controls the lane and size of a stage's mask.
 * **#BEAT (float)**
 * **lane (float)**
 * **size (float)**
+* **maskNotes (bool)**: When true, note and connector edges are clamped to the stage mask in play, watch, and preview modes. Defaults to false.
 * **ease (EaseType)**
 * **next (ref?[StageMaskChange])**: A reference to the next **StageMaskChange** event.
 
@@ -111,7 +112,6 @@ An event that controls the visual style of a stage.
 * **judgeLineAlpha (float)**
 * **divisionLineAlpha (float)**: Multiplies the alpha of the lane dividers (on top of `laneAlpha`), letting the dividers fade independently of the lane background, judge line, and borders. Defaults to 1.
 * **noteAlpha (float)**: Multiplies the alpha of the notes currently on the stage, including connectors. Defaults to 1.
-* **maskNotes (bool)**: When true, note edges are clamped to the stage mask in play and watch modes. Notes fully outside the mask are hidden. Hitboxes and preview rendering are unaffected. Defaults to false.
 * **ease (EaseType)**
 * **next (ref?[StageStyleChange])**: A reference to the next **StageStyleChange** event.
 

@@ -113,6 +113,7 @@ class LevelStageMaskChange:
     lane: float
     size: float
     ease: EaseType = EaseType.LINEAR
+    mask_notes: bool = False
 
 
 @dataclass
@@ -140,7 +141,6 @@ class LevelStageStyleChange:
     division_line_alpha: float = 1.0
     note_alpha: float = 1.0
     ease: EaseType = EaseType.LINEAR
-    mask_notes: bool = False
 
 
 @dataclass
@@ -542,6 +542,7 @@ def _build_stage(level_stage: LevelStage) -> tuple[DynamicStage, list[PlayArchet
             beat=m.beat,
             lane=m.lane,
             size=m.size,
+            mask_notes=m.mask_notes,
             ease=m.ease,
         )
         for m in sorted(level_stage.mask_changes, key=lambda c: c.beat)
@@ -583,7 +584,6 @@ def _build_stage(level_stage: LevelStage) -> tuple[DynamicStage, list[PlayArchet
             judge_line_alpha=s.judge_line_alpha,
             division_line_alpha=s.division_line_alpha,
             note_alpha=s.note_alpha,
-            mask_notes=s.mask_notes,
             ease=s.ease,
         )
         for s in sorted(level_stage.style_changes, key=lambda c: c.beat)

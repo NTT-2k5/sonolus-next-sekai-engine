@@ -4,7 +4,7 @@ from typing import assert_never
 
 from sonolus.script.archetype import EntityRef, PlayArchetype, callback, entity_data, entity_memory, imported
 from sonolus.script.effect import LoopedEffectHandle
-from sonolus.script.interval import Interval, lerp, remap_clamped, unlerp_clamped
+from sonolus.script.interval import Interval, lerp
 from sonolus.script.particle import ParticleHandle
 from sonolus.script.runtime import input_offset, offset_adjusted_time, time, touches
 from sonolus.script.timing import beat_to_time
@@ -22,7 +22,9 @@ from sekai.lib.connector import (
     destroy_looped_sfx,
     draw_connector,
     draw_connector_slot_glow_effect,
+    get_connector_fractions,
     get_connector_input_leniency,
+    get_connector_interp_frac,
     is_fake_active_connector,
     schedule_connector_sfx,
     should_show_connector_hitbox,
@@ -32,7 +34,7 @@ from sekai.lib.connector import (
     update_connector_sfx,
     update_linear_connector_particle,
 )
-from sekai.lib.ease import EaseType, ease
+from sekai.lib.ease import EaseType, safe_unlerp_clamped
 from sekai.lib.layout import StageTransform, blend_stage_transform
 from sekai.lib.note import draw_connector_hitbox_overlay, draw_slide_note_head, get_attach_params
 from sekai.lib.options import Options
@@ -172,12 +174,10 @@ class Connector(PlayArchetype):
                 tail = self.tail
                 self.active_connector_info.visual_lane = visual_lane
                 self.active_connector_info.visual_size = visual_size
-                self.active_connector_info.visual_y_offset = remap_clamped(
-                    head.target_time,
-                    tail.target_time,
+                self.active_connector_info.visual_y_offset = lerp(
                     head.visual_y_offset,
                     tail.visual_y_offset,
-                    time(),
+                    safe_unlerp_clamped(head.target_time, tail.target_time, time()),
                 )
                 self.active_connector_info.connector_kind = self.kind
             if group_hide_notes(self.segment_head.timescale_group) and self.active_head_ref.index > 0:
@@ -223,26 +223,23 @@ class Connector(PlayArchetype):
             head_mask @= head.visual_mask
             tail_mask = tail.visual_mask
             if time() >= head.target_time and not segment_head.segment_through_judge_line:
-                head_visual_progress = 1.0 - remap_clamped(
-                    head.target_time, tail.target_time, head.visual_y_offset, tail.visual_y_offset, time()
-                )
+                head_frac = safe_unlerp_clamped(head.target_time, tail.target_time, time())
+                head_visual_progress = 1.0 - lerp(head.visual_y_offset, tail.visual_y_offset, head_frac)
                 head_target_time = time()
-                head_note_alpha = remap_clamped(
-                    head.target_time, tail.target_time, head.visual_note_alpha, tail.visual_note_alpha, time()
-                )
+                head_note_alpha = lerp(head.visual_note_alpha, tail.visual_note_alpha, head_frac)
                 if self.ease_type == EaseType.NONE:
                     head_lane = head.visual_lane
                     head_size = head.size
                     head_ease_frac = head.head_ease_frac
                     head_transform @= head.visual_stage_transform()
                 else:
-                    head_ease_frac = remap_clamped(
-                        head.target_time, tail.target_time, head.head_ease_frac, tail.tail_ease_frac, time()
-                    )
-                    head_interp_frac = unlerp_clamped(
-                        ease(self.ease_type, head.head_ease_frac),
-                        ease(self.ease_type, tail.tail_ease_frac),
-                        ease(self.ease_type, head_ease_frac),
+                    head_ease_frac = lerp(head.head_ease_frac, tail.tail_ease_frac, head_frac)
+                    head_interp_frac = get_connector_interp_frac(
+                        self.ease_type,
+                        head.head_ease_frac,
+                        tail.tail_ease_frac,
+                        head_ease_frac,
+                        head_frac,
                     )
                     head_lane = lerp(head.visual_lane, tail.visual_lane, head_interp_frac)
                     head_size = lerp(head.size, tail.size, head_interp_frac)
@@ -323,13 +320,13 @@ class Connector(PlayArchetype):
         mask_left = head_mask.left
         mask_right = head_mask.right
         if self.ease_type != EaseType.NONE:
-            head_ease_frac = remap_clamped(
-                head.target_time, tail.target_time, head.head_ease_frac, tail.tail_ease_frac, time()
-            )
-            interp_frac = unlerp_clamped(
-                ease(self.ease_type, head.head_ease_frac),
-                ease(self.ease_type, tail.tail_ease_frac),
-                ease(self.ease_type, head_ease_frac),
+            _, interp_frac = get_connector_fractions(
+                self.ease_type,
+                head.target_time,
+                head.head_ease_frac,
+                tail.target_time,
+                tail.tail_ease_frac,
+                time(),
             )
             result_lane = lerp(head.visual_lane, tail.visual_lane, interp_frac)
             result_size = lerp(head.size, tail.size, interp_frac)
@@ -506,12 +503,13 @@ class SlideManager(PlayArchetype):
         note_alpha = seg_head.visual_note_alpha
         if next_ref.index > 0:
             seg_tail = next_ref.get()
-            frac = remap_clamped(seg_head.target_time, seg_tail.target_time, 0.0, 1.0, time())
-            ease_frac = lerp(seg_head.head_ease_frac, seg_tail.tail_ease_frac, frac)
-            transform_frac = unlerp_clamped(
-                ease(seg_head.connector_ease, seg_head.head_ease_frac),
-                ease(seg_head.connector_ease, seg_tail.tail_ease_frac),
-                ease(seg_head.connector_ease, ease_frac),
+            frac, transform_frac = get_connector_fractions(
+                seg_head.connector_ease,
+                seg_head.target_time,
+                seg_head.head_ease_frac,
+                seg_tail.target_time,
+                seg_tail.tail_ease_frac,
+                time(),
             )
             result @= blend_stage_transform(
                 seg_head.visual_stage_transform(),

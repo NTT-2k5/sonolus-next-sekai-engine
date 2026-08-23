@@ -134,10 +134,42 @@ def sweep_slide(start_beat: float, stage_order: list[LevelStage]) -> LevelSlide:
 ltr_slide = sweep_slide(LTR_SLIDE_START_BEAT, arc_stages)
 rtl_slide = sweep_slide(RTL_SLIDE_START_BEAT, arc_stages[::-1])
 
+# Nonlinear transform parity: at the raw midpoint the IN_QUAD connector is one quarter of the way
+# between the outer stage transforms. The attached tick and active connector hitbox must coincide.
+nonlinear_transform_slide = LevelSlide(
+    notes=[
+        LevelNote(
+            beat=5.0,
+            lane=0.0,
+            size=1.0,
+            kind=NoteKind.NORM_HEAD_TAP,
+            stage=arc_stages[0],
+            segment_kind=ConnectorKind.ACTIVE_NORMAL,
+            connector_ease=EaseType.IN_QUAD,
+        ),
+        LevelNote(
+            beat=7.0,
+            lane=0.0,
+            size=1.0,
+            kind=NoteKind.NORM_TAIL_RELEASE,
+            stage=arc_stages[-1],
+        ),
+    ]
+)
+nonlinear_transform_tick = LevelNote(
+    beat=6.0,
+    lane=0.0,
+    size=0.0,
+    kind=NoteKind.NORM_TICK,
+    attach=nonlinear_transform_slide,
+)
+nonlinear_transform_slide.notes.insert(1, nonlinear_transform_tick)
+
 entities = [
     LevelBpmChange(beat=0.0, bpm=BPM),
     *arc_stages,
     ltr_slide,
+    nonlinear_transform_slide,
     rtl_slide,
 ]
 

@@ -229,6 +229,7 @@ class StageMaskChange(PlayArchetype, BaseEvent):
     beat: StandardImport.BEAT
     lane: float = imported()
     size: float = imported()
+    mask_notes: bool = imported(name="maskNotes", default=False)
     ease: EaseType = imported()
     next_ref: EntityRef[StageMaskChange] = imported(name="next")
 
@@ -294,7 +295,6 @@ class StageStyleChange(PlayArchetype, BaseEvent):
     judge_line_alpha: float = imported(name="judgeLineAlpha")
     division_line_alpha: float = imported(name="divisionLineAlpha", default=1)
     note_alpha: float = imported(name="noteAlpha", default=1)
-    mask_notes: bool = imported(name="maskNotes", default=False)
     ease: EaseType = imported()
     next_ref: EntityRef[StageStyleChange] = imported(name="next")
 

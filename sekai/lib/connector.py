@@ -7,7 +7,7 @@ from sonolus.script.array import Dim
 from sonolus.script.containers import VarArray
 from sonolus.script.easing import ease_out_cubic
 from sonolus.script.effect import Effect, LoopedEffectHandle
-from sonolus.script.interval import clamp, lerp, remap_clamped, unlerp_clamped
+from sonolus.script.interval import clamp, lerp, remap_clamped
 from sonolus.script.particle import Particle, ParticleHandle
 from sonolus.script.quad import Quad, QuadLike
 from sonolus.script.record import Record
@@ -16,7 +16,7 @@ from sonolus.script.sprite import Sprite
 from sonolus.script.timing import beat_to_time
 
 from sekai.lib.buckets import SLIDE_TICK_JUDGMENT_WINDOW
-from sekai.lib.ease import EaseType, ease
+from sekai.lib.ease import EaseType, ease, safe_unlerp_clamped
 from sekai.lib.effect import Effects
 from sekai.lib.layer import (
     LAYER_ACTIVE_SLIDE_CONNECTOR_BOTTOM,
@@ -58,6 +58,43 @@ CONNECTOR_SLOT_SPAWN_PERIOD = 0.2
 CONNECTOR_THROUGH_JUDGE_LINE_DESPAWN_DELAY = 5.0
 CONNECTOR_LENIENCY = 1
 CONNECTOR_ZERO_SIZE_FALLBACK = 1e-3
+
+
+def get_connector_interp_frac(
+    ease_type: EaseType,
+    head_ease_frac: float,
+    tail_ease_frac: float,
+    target_ease_frac: float,
+    fallback_frac: float,
+) -> float:
+    if ease_type == EaseType.NONE:
+        return 0.0
+    return safe_unlerp_clamped(
+        ease(ease_type, head_ease_frac),
+        ease(ease_type, tail_ease_frac),
+        ease(ease_type, target_ease_frac),
+        fallback_frac,
+    )
+
+
+def get_connector_fractions(
+    ease_type: EaseType,
+    head_target_time: float,
+    head_ease_frac: float,
+    tail_target_time: float,
+    tail_ease_frac: float,
+    target_time: float,
+) -> tuple[float, float]:
+    target_frac = safe_unlerp_clamped(head_target_time, tail_target_time, target_time)
+    target_ease_frac = lerp(head_ease_frac, tail_ease_frac, target_frac)
+    interp_frac = get_connector_interp_frac(
+        ease_type,
+        head_ease_frac,
+        tail_ease_frac,
+        target_ease_frac,
+        target_frac,
+    )
+    return target_frac, interp_frac
 
 
 class ConnectorKind(IntEnum):
@@ -483,14 +520,18 @@ def draw_connector(
             assert_never(kind)
 
     head_alpha = (
-        remap_clamped(
-            segment_head_target_time, segment_tail_target_time, segment_head_alpha, segment_tail_alpha, head_target_time
+        lerp(
+            segment_head_alpha,
+            segment_tail_alpha,
+            safe_unlerp_clamped(segment_head_target_time, segment_tail_target_time, head_target_time),
         )
         * head_note_alpha
     )
     tail_alpha = (
-        remap_clamped(
-            segment_head_target_time, segment_tail_target_time, segment_head_alpha, segment_tail_alpha, tail_target_time
+        lerp(
+            segment_head_alpha,
+            segment_tail_alpha,
+            safe_unlerp_clamped(segment_head_target_time, segment_tail_target_time, tail_target_time),
         )
         * tail_note_alpha
     )
@@ -639,14 +680,14 @@ def draw_connector_default(
 ):
     start_visual_progress = clamp(head_visual_progress, DynamicLayout.progress_start, DynamicLayout.progress_cutoff)
     end_visual_progress = clamp(tail_visual_progress, DynamicLayout.progress_start, DynamicLayout.progress_cutoff)
-    start_frac = unlerp_clamped(head_visual_progress, tail_visual_progress, start_visual_progress)
-    end_frac = unlerp_clamped(head_visual_progress, tail_visual_progress, end_visual_progress)
+    start_frac = safe_unlerp_clamped(head_visual_progress, tail_visual_progress, start_visual_progress, 0.0)
+    end_frac = safe_unlerp_clamped(head_visual_progress, tail_visual_progress, end_visual_progress, 1.0)
     start_ease_frac = lerp(head_ease_frac, tail_ease_frac, start_frac)
     end_ease_frac = lerp(head_ease_frac, tail_ease_frac, end_frac)
-    eased_head_ease_frac = ease(ease_type, head_ease_frac)
-    eased_tail_ease_frac = ease(ease_type, tail_ease_frac)
-    start_interp_frac = unlerp_clamped(eased_head_ease_frac, eased_tail_ease_frac, ease(ease_type, start_ease_frac))
-    end_interp_frac = unlerp_clamped(eased_head_ease_frac, eased_tail_ease_frac, ease(ease_type, end_ease_frac))
+    start_interp_frac = get_connector_interp_frac(
+        ease_type, head_ease_frac, tail_ease_frac, start_ease_frac, start_frac
+    )
+    end_interp_frac = get_connector_interp_frac(ease_type, head_ease_frac, tail_ease_frac, end_ease_frac, end_frac)
     start_travel = approach(start_visual_progress)
     end_travel = approach(end_visual_progress)
     start_lane = lerp(head_lane, tail_lane, start_interp_frac)
@@ -700,12 +741,13 @@ def draw_connector_default(
             total_pos_offsets = 0
             for r in (0.25, 0.75):
                 ease_frac = lerp(start_ease_frac, end_ease_frac, r)
-                interp_frac = unlerp_clamped(eased_head_ease_frac, eased_tail_ease_frac, ease(ease_type, ease_frac))
+                raw_frac = lerp(start_frac, end_frac, r)
+                interp_frac = get_connector_interp_frac(ease_type, head_ease_frac, tail_ease_frac, ease_frac, raw_frac)
                 visual_progress = lerp(start_visual_progress, end_visual_progress, r)
                 travel = approach(visual_progress)
                 lane = lerp(ref_head_lane, ref_tail_lane, interp_frac)
                 pos = pre_rotation_vec_at(lane, travel)
-                ref_pos = lerp(start_ref, end_ref, unlerp_clamped(start_travel, end_travel, travel))
+                ref_pos = lerp(start_ref, end_ref, safe_unlerp_clamped(start_travel, end_travel, travel, r))
                 current_pos_offset = pos.x - ref_pos.x
                 total_pos_offsets += abs(current_pos_offset - last_pos_offset) ** 0.6
                 last_pos_offset = current_pos_offset
@@ -746,7 +788,9 @@ def draw_connector_default(
         segment_frac = i / segment_count
         next_frac = lerp(start_frac, end_frac, segment_frac)
         next_ease_frac = lerp(start_ease_frac, end_ease_frac, segment_frac)
-        next_interp_frac = unlerp_clamped(eased_head_ease_frac, eased_tail_ease_frac, ease(ease_type, next_ease_frac))
+        next_interp_frac = get_connector_interp_frac(
+            ease_type, head_ease_frac, tail_ease_frac, next_ease_frac, next_frac
+        )
         next_visual_progress = lerp(start_visual_progress, end_visual_progress, segment_frac)
         next_travel = approach(next_visual_progress)
         next_lane = lerp(head_lane, tail_lane, next_interp_frac)
@@ -920,7 +964,7 @@ def draw_connector_full_screen(
     tail_target_time: float,
     tail_alpha: float,
 ):
-    judge_frac = unlerp_clamped(head_target_time, tail_target_time, time())
+    judge_frac = safe_unlerp_clamped(head_target_time, tail_target_time, time())
     judge_alpha = lerp(head_alpha, tail_alpha, judge_frac)
     base_a = clamp(get_alpha(time()) * judge_alpha * get_connector_alpha_option(kind), 0, 1)
     draw_connector_quad(screen(), visual_state, normal_sprite, active_sprite, z_normal, z_active, base_a)
