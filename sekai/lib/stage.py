@@ -180,6 +180,13 @@ class StageProps(Record):
         )
 
 
+class VisualMask(Record):
+    left: float
+    right: float
+    enabled: bool
+    stage_index: int
+
+
 class StageMaskChangeLike(Protocol):
     time: float
     lane: float

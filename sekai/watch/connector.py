@@ -31,6 +31,7 @@ from sekai.lib.ease import EaseType, ease
 from sekai.lib.layout import StageTransform, blend_stage_transform
 from sekai.lib.note import draw_connector_hitbox_overlay, draw_slide_note_head, get_attach_params
 from sekai.lib.options import Options
+from sekai.lib.stage import VisualMask, masked_note_extents_by_limits
 from sekai.lib.streams import Streams
 from sekai.lib.timescale import group_hide_notes, update_timescale_group
 from sekai.watch import note
@@ -137,6 +138,9 @@ class WatchConnector(WatchArchetype):
             head_transform = +StageTransform
             tail_transform = +StageTransform
             tail_transform @= tail.visual_stage_transform()
+            head_mask = +VisualMask
+            head_mask @= head.visual_mask
+            tail_mask = tail.visual_mask
             if time() >= head.target_time and not segment_head.segment_through_judge_line:
                 head_visual_progress = 1.0 - remap_clamped(
                     head.target_time, tail.target_time, head.visual_y_offset, tail.visual_y_offset, time()
@@ -146,6 +150,8 @@ class WatchConnector(WatchArchetype):
                     head.target_time, tail.target_time, head.visual_note_alpha, tail.visual_note_alpha, time()
                 )
                 if self.ease_type == EaseType.NONE:
+                    head_lane = head.visual_lane
+                    head_size = head.size
                     head_ease_frac = head.head_ease_frac
                     head_transform @= head.visual_stage_transform()
                 else:
@@ -157,19 +163,23 @@ class WatchConnector(WatchArchetype):
                         ease(self.ease_type, tail.tail_ease_frac),
                         ease(self.ease_type, head_ease_frac),
                     )
+                    head_lane = lerp(head.visual_lane, tail.visual_lane, head_interp_frac)
+                    head_size = lerp(head.size, tail.size, head_interp_frac)
+                    if head_mask.enabled and tail_mask.enabled:
+                        head_mask.left = lerp(head_mask.left, tail_mask.left, head_interp_frac)
+                        head_mask.right = lerp(head_mask.right, tail_mask.right, head_interp_frac)
                     # Head has crossed the judge line, so its transform is the connector's blend at that point.
                     head_transform @= blend_stage_transform(
                         head.visual_stage_transform(), tail.visual_stage_transform(), head_interp_frac
                     )
-                head_lane, head_size = self.current_visual_head_extents()
             else:
-                head_lane, head_size = head.visual_extents
+                head_lane = head.visual_lane
+                head_size = head.size
                 head_visual_progress = head.visual_progress
                 head_target_time = head.target_time
                 head_ease_frac = head.head_ease_frac
                 head_note_alpha = head.visual_note_alpha
                 head_transform @= head.visual_stage_transform()
-            tail_lane, tail_size = tail.visual_extents
             draw_connector(
                 kind=self.kind,
                 visual_state=visual_state,
@@ -179,8 +189,8 @@ class WatchConnector(WatchArchetype):
                 head_visual_progress=head_visual_progress,
                 head_target_time=head_target_time,
                 head_ease_frac=head_ease_frac,
-                tail_lane=tail_lane,
-                tail_size=tail_size,
+                tail_lane=tail.visual_lane,
+                tail_size=tail.size,
                 tail_visual_progress=tail.visual_progress,
                 tail_target_time=tail.target_time,
                 tail_ease_frac=tail.tail_ease_frac,
@@ -196,6 +206,8 @@ class WatchConnector(WatchArchetype):
                 tail_transform=tail_transform,
                 head_note_alpha=head_note_alpha,
                 tail_note_alpha=tail.visual_note_alpha,
+                head_mask=head_mask,
+                tail_mask=tail_mask,
             )
 
     def draw_hitbox(self):
@@ -230,11 +242,13 @@ class WatchConnector(WatchArchetype):
     def current_visual_head_extents(self) -> tuple[float, float]:
         head = self.head
         tail = self.tail
-        head_lane, head_size = head.visual_extents
-        result_lane = head_lane
-        result_size = head_size
+        result_lane = head.visual_lane
+        result_size = head.size
+        head_mask = head.visual_mask
+        tail_mask = tail.visual_mask
+        mask_left = head_mask.left
+        mask_right = head_mask.right
         if self.ease_type != EaseType.NONE:
-            tail_lane, tail_size = tail.visual_extents
             head_ease_frac = remap_clamped(
                 head.target_time, tail.target_time, head.head_ease_frac, tail.tail_ease_frac, time()
             )
@@ -243,9 +257,17 @@ class WatchConnector(WatchArchetype):
                 ease(self.ease_type, tail.tail_ease_frac),
                 ease(self.ease_type, head_ease_frac),
             )
-            result_lane = lerp(head_lane, tail_lane, interp_frac)
-            result_size = lerp(head_size, tail_size, interp_frac)
-        return result_lane, result_size
+            result_lane = lerp(head.visual_lane, tail.visual_lane, interp_frac)
+            result_size = lerp(head.size, tail.size, interp_frac)
+            mask_left = lerp(head_mask.left, tail_mask.left, interp_frac)
+            mask_right = lerp(head_mask.right, tail_mask.right, interp_frac)
+        return masked_note_extents_by_limits(
+            result_lane,
+            result_size,
+            mask_left,
+            mask_right,
+            head_mask.enabled and tail_mask.enabled,
+        )
 
     def schedule_sfx(self):
         if is_replay() and not Options.auto_sfx:

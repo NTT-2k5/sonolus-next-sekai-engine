@@ -343,7 +343,7 @@ right_flicks = [
     for b in range(1, int(SLIDE_END_BEAT) + 1)
 ]
 
-# Clamp connector endpoints without clipping the connector itself.
+# Clip the original connector geometry to the shared stage mask instead of connecting its masked endpoints.
 masked_connector_slide = LevelSlide(
     notes=[
         LevelNote(
@@ -374,7 +374,7 @@ masked_connector_slide = LevelSlide(
     ]
 )
 
-# A connector disappears when both endpoints are fully masked.
+# Endpoints outside opposite mask bounds leave the middle of the connector visible.
 masked_outside_connector_slide = LevelSlide(
     notes=[
         LevelNote(
@@ -398,6 +398,91 @@ masked_outside_connector_slide = LevelSlide(
 )
 
 
+# Exercise interpolated masks between stages with note masking enabled, then verify that the connector
+# remains unmasked when either endpoint does not use note masking.
+mixed_stage_mask_connector_slide = LevelSlide(
+    notes=[
+        LevelNote(
+            beat=27.0,
+            lane=1.5,
+            size=1.0,
+            kind=NoteKind.ANCHOR,
+            stage=stage_a,
+            is_separator=True,
+            segment_kind=ConnectorKind.GUIDE_PURPLE,
+            connector_ease=EaseType.LINEAR,
+        ),
+        LevelNote(
+            beat=30.0,
+            lane=-1.5,
+            size=1.0,
+            kind=NoteKind.ANCHOR,
+            stage=right_flick_stage,
+            is_separator=True,
+            segment_kind=ConnectorKind.GUIDE_BLUE,
+            connector_ease=EaseType.LINEAR,
+        ),
+        LevelNote(
+            beat=33.0,
+            lane=3.5,
+            size=1.0,
+            kind=NoteKind.ANCHOR,
+            stage=guide_stage,
+            is_separator=True,
+            segment_kind=ConnectorKind.GUIDE_GREEN,
+            connector_ease=EaseType.LINEAR,
+        ),
+        LevelNote(
+            beat=36.0,
+            lane=1.5,
+            size=1.0,
+            kind=NoteKind.ANCHOR,
+            stage=stage_a,
+            is_separator=True,
+            segment_kind=ConnectorKind.NONE,
+            connector_ease=EaseType.LINEAR,
+        ),
+    ]
+)
+
+
+# The first connector has zero size at both endpoints; the second has zero size only at its head.
+zero_size_connector_slide = LevelSlide(
+    notes=[
+        LevelNote(
+            beat=38.0,
+            lane=-2.0,
+            size=0.0,
+            kind=NoteKind.ANCHOR,
+            stage=guide_stage,
+            is_separator=True,
+            segment_kind=ConnectorKind.GUIDE_YELLOW,
+            connector_ease=EaseType.LINEAR,
+        ),
+        LevelNote(
+            beat=39.0,
+            lane=0.0,
+            size=0.0,
+            kind=NoteKind.ANCHOR,
+            stage=guide_stage,
+            is_separator=True,
+            segment_kind=ConnectorKind.GUIDE_CYAN,
+            connector_ease=EaseType.LINEAR,
+        ),
+        LevelNote(
+            beat=40.0,
+            lane=2.0,
+            size=1.0,
+            kind=NoteKind.ANCHOR,
+            stage=guide_stage,
+            is_separator=True,
+            segment_kind=ConnectorKind.NONE,
+            connector_ease=EaseType.LINEAR,
+        ),
+    ]
+)
+
+
 entities = [
     LevelBpmChange(beat=0.0, bpm=60.0),
     stage_a,
@@ -410,6 +495,8 @@ entities = [
     full_screen_guide,
     masked_connector_slide,
     masked_outside_connector_slide,
+    mixed_stage_mask_connector_slide,
+    zero_size_connector_slide,
     *attached_notes,
     *right_flicks,
 ]
@@ -551,7 +638,7 @@ mask_lab_control_slide = LevelSlide(
     ]
 )
 
-# Connectors with two fully masked endpoints disappear on either side.
+# Endpoints outside the same mask bound leave the connector hidden.
 mask_lab_same_side_connector = LevelSlide(
     notes=[
         LevelNote(
@@ -573,6 +660,9 @@ mask_lab_same_side_connector = LevelSlide(
         ),
     ]
 )
+
+
+# Endpoints outside opposite mask bounds leave the middle of the connector visible with exact splits.
 mask_lab_opposite_connector = LevelSlide(
     notes=[
         LevelNote(

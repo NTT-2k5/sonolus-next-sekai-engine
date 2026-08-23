@@ -70,8 +70,8 @@ from sekai.lib.options import Options
 from sekai.lib.stage import (
     DivisionParity,
     JudgeLineStyle,
+    VisualMask,
     get_stage_props,
-    masked_note_extents,
     masked_note_extents_by_limits,
     resolve_judge_line_style,
 )
@@ -831,39 +831,47 @@ class BaseNote(PlayArchetype):
         return self.visual_lane_at(time())
 
     @property
-    def _basic_visual_mask(self) -> tuple[float, float, bool]:
-        left = 0.0
-        right = 0.0
-        enabled = self.stage_ref.index != self.stage_ref.index
+    def _basic_visual_mask(self) -> VisualMask:
+        result = +VisualMask
         if self.stage_ref.index > 0:
             props = self.stage_ref.get().props
-            left = props.lane - props.width
-            right = props.lane + props.width
-            enabled = props.mask_notes
-        return left, right, enabled
+            result.left = props.lane - props.width
+            result.right = props.lane + props.width
+            result.enabled = props.mask_notes
+            if result.enabled:
+                result.stage_index = self.stage_ref.index
+        return result
+
+    @property
+    def visual_mask(self) -> VisualMask:
+        result = +VisualMask
+        if not self.is_attached:
+            result @= self._basic_visual_mask
+            return result
+
+        head_mask = self.attach_head_ref.get()._basic_visual_mask
+        tail_mask = self.attach_tail_ref.get()._basic_visual_mask
+        if head_mask.enabled and not tail_mask.enabled:
+            result @= head_mask
+            return result
+        if tail_mask.enabled and not head_mask.enabled:
+            result @= tail_mask
+            return result
+        if not head_mask.enabled:
+            return result
+
+        result.left = lerp(head_mask.left, tail_mask.left, self.attach_eased_frac)
+        result.right = lerp(head_mask.right, tail_mask.right, self.attach_eased_frac)
+        result.enabled = True
+        if head_mask.stage_index == tail_mask.stage_index and head_mask.stage_index > 0:
+            result.stage_index = head_mask.stage_index
+        return result
 
     @property
     def visual_extents(self) -> tuple[float, float]:
         render_lane = self.visual_lane
-        render_size = self.size
-        if self.is_attached:
-            head_left, head_right, head_enabled = self.attach_head_ref.get()._basic_visual_mask
-            tail_left, tail_right, tail_enabled = self.attach_tail_ref.get()._basic_visual_mask
-            if head_enabled and not tail_enabled:
-                tail_left = head_left
-                tail_right = head_right
-            elif tail_enabled and not head_enabled:
-                head_left = tail_left
-                head_right = tail_right
-            mask_left = lerp(head_left, tail_left, self.attach_eased_frac)
-            mask_right = lerp(head_right, tail_right, self.attach_eased_frac)
-            mask_enabled = head_enabled or tail_enabled
-            render_lane, render_size = masked_note_extents_by_limits(
-                render_lane, self.size, mask_left, mask_right, mask_enabled
-            )
-        elif self.stage_ref.index > 0:
-            render_lane, render_size = masked_note_extents(render_lane, self.size, self.stage_ref.get().props)
-        return render_lane, render_size
+        mask = self.visual_mask
+        return masked_note_extents_by_limits(render_lane, self.size, mask.left, mask.right, mask.enabled)
 
     @property
     def _basic_visual_y_offset(self) -> float:
