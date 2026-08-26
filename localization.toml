@@ -32,7 +32,7 @@ title.ko = "롱 노트 불투명도"
 title.fr = "Opacité des Slides"
 title.ru = "Прозрачность слайда"
 title.vi = "Độ trong suốt đường nối Note giữ"
-title.ja = "スライドの不透明度"
+title.ja = "ロングノーツの不透明度"
 
 [options.guide_alpha]
 title.en = "Guide Alpha"
@@ -117,7 +117,7 @@ title.ko = "롱 노트 품질"
 title.fr = "Qualité des Slides"
 title.ru = "Качество слайда"
 title.vi = "Độ mượt đường nối Note giữ"
-title.ja = "スライドの描画品質"
+title.ja = "ロングノーツの描画品質"
 
 [options.guide_quality]
 title.en = "Guide Quality"
