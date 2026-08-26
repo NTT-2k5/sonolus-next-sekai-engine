@@ -213,7 +213,7 @@ title.ko = "판정 범위 표시"
 title.fr = "Afficher les Hitboxes"
 title.ru = "Показать хитбоксы"
 title.vi = "Hiển thị Hitbox"
-title.ja = "判定エリアを表示"
+title.ja = "当たり判定を表示"
 
 [options.test_aspect_ratio]
 title.en = "Test Aspect Ratio"
